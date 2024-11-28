@@ -1,0 +1,68 @@
+
+-- Inserting into Users
+INSERT INTO "users" ("username")
+    SELECT DISTINCT "username"
+    FROM "bad_posts"
+    UNION
+    SELECT DISTINCT "username"
+    FROM "bad_comments"
+    UNION
+    SELECT DISTINCT regexp_split_to_table("upvotes", ',')
+    FROM "bad_posts"
+    UNION
+    SELECT DISTINCT regexp_split_to_table("downvotes", ',')
+    FROM "bad_posts";
+
+
+
+-- Inserting into Topics
+INSERT INTO "topics" ("topic_name")
+SELECT DISTINCT "topic"
+FROM "bad_posts"
+WHERE LENGTH(TRIM("topic")) > 0 AND LENGTH("topic") < 31;
+
+
+
+-- Inserting into Posts
+INSERT INTO "posts" ("user_id", "topic_id", "title", "url", "text_content")
+SELECT
+    "users"."id",
+    "topics"."id",
+    LEFT("bad_posts"."title", 100),
+    "bad_posts"."url",
+    "bad_posts"."text_content"
+FROM "bad_posts"
+JOIN "users" ON "users"."username" = "bad_posts"."username"
+JOIN "topics" ON "topics"."topic_name" = "bad_posts"."topic";
+
+
+
+-- Inserting into Comments
+INSERT INTO "comments" ("text_content", "post_id", "user_id")
+SELECT
+    "bad_comments"."text_content",
+    "bad_comments"."post_id",
+    "users"."id"
+FROM "bad_comments"
+JOIN "users" ON "users"."username" = "bad_comments"."username"
+WHERE "bad_comments"."post_id" IN (SELECT "id" FROM "posts");
+
+
+
+-- Inserting into Votes
+INSERT INTO votes (user_id, post_id, vote_value)
+SELECT
+    users.id,
+    bad_posts.id,
+    1
+FROM bad_posts
+CROSS JOIN regexp_split_to_table(bad_posts.upvotes, ',') AS upvote_username
+JOIN users ON users.username = upvote_username
+UNION ALL
+SELECT
+    users.id,
+    bad_posts.id,
+    -1
+FROM bad_posts
+CROSS JOIN regexp_split_to_table(bad_posts.downvotes, ',') AS downvote_username
+JOIN users ON users.username = downvote_username;
