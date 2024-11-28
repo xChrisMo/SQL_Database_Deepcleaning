@@ -1,0 +1,91 @@
+-- Creating the users table
+CREATE TABLE users(
+    "id" SERIAL PRIMARY KEY,
+    "username" VARCHAR(25) UNIQUE NOT NULL,
+    "last_logged_in" TIMESTAMP,
+    CONSTRAINT "non_empty_username" CHECK (LENGTH(TRIM(username)) > 0)
+);
+
+
+-- List all users who haven't logged in in the last year.
+CREATE INDEX last_login_idx ON users ("last_logged_in");
+-- Find a user by their username.
+Already an index (due to the UNIQUE constraint!)
+
+
+
+-- Creating topics table
+CREATE TABLE topics(
+    "id" SERIAL PRIMARY KEY,
+    "user_id" INTEGER REFERENCES "users"("id"),
+    "topic_name" VARCHAR(30) UNIQUE NOT NULL,
+    "description" VARCHAR(500) NULL,
+    CONSTRAINT "non_empty_topic" CHECK (LENGTH(TRIM("topic_name")) > 0)
+);
+
+-- Find a topic by its name.
+ALready an index (UNIQUE constraint during creation!)
+
+
+-- Creating the posts tbale
+CREATE TABLE posts(
+    "id" SERIAL PRIMARY KEY,
+    "user_id" INTEGER REFERENCES "users"("id") ON DELETE SET NULL,
+    "topic_id" INTEGER REFERENCES "topics"("id") ON DELETE CASCADE NOT NULL,
+    "title" VARCHAR(100) NOT NULL,
+    "url" TEXT,
+    "text_content" TEXT,
+    "post_time" TIMESTAMP,
+    CONSTRAINT "url_or_text_content" CHECK (
+        ("url" IS NOT NULL AND "text_content" IS NULL) OR
+        ("url" IS NULL AND "text_content" IS NOT NULL)
+    ),
+    CONSTRAINT "post_title_not_empty" CHECK (LENGTH(TRIM("title")) > 0)
+);
+
+-- List all users who haven't created any posts.
+CREATE INDEX user_post_idx ON "posts" ("user_id");
+-- List all topics that don't have any posts.
+CREATE INDEX post_topics_idx ON "posts" ("topic_id");
+-- List the latest 20 posts for a given topic.
+CREATE INDEX post_topic_time_idx ON posts("topic_id", "post_time");
+-- List the latest 20 posts made by a given user.
+CREATE INDEX user_posttime_idx ON "posts" ("user_id", "post_time");
+-- Find all posts that link to a specific URL, for moderation purposes
+CREATE INDEX post_url_idx ON "posts" ("url");
+
+
+
+-- Creating the comments table
+CREATE TABLE comments(
+    "id" SERIAL PRIMARY KEY,
+    "user_id" INTEGER REFERENCES "users" ("id") ON DELETE SET NULL,
+    "post_id" INTEGER REFERENCES "posts" ("id") ON DELETE CASCADE NOT NULL,
+    "text_content" TEXT NOT NULL CHECK (LENGTH(TRIM(text_content)) > 0),
+    "parent_id" INTEGER REFERENCES "comments"("id") ON DELETE CASCADE,
+    "time" TIMESTAMP
+);
+
+-- List all the top-level comments (those that don't have a parent comment) for a given post.
+CREATE INDEX top_level_comments_idx ON "comments" ("post_id") WHERE "parent_id" IS NULL;
+-- List all the direct children of a parent comment.
+CREATE INDEX child_idx ON "comments" ("parent_id");
+-- List the latest 20 comments made by a given user.
+CREATE INDEX comment_time_idx ON "comments" ("user_id", "time");
+
+
+
+
+-- Creating Votes
+CREATE TABLE votes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    vote_value INTEGER CHECK (vote_value IN (1, -1)),
+    CONSTRAINT unique_user_post_vote UNIQUE (user_id, post_id)
+);
+
+-- Compute the score of a post, defined as the difference between the number of upvotes and the number of downvotes
+CREATE INDEX vote_score_idx ON "votes" ("post_id", "vote_value");
+
+
