@@ -1,16 +1,17 @@
 # Udiddit Database Deepcleaning
 
+## 'Udiddit, A Social News Aggregator' schema design project from Udacity's SQL Nanodegree program
+
+The project involves investigating a poorly designed database for Udiddit, making new tables using DDL and DCL commands that enforce the newly required schema, and then migrating data to meet new business needs using DML commands.
+
 ## Project Breakdown
 
-This project directory has the scchema
+This project directory has the schema:
 
        |-- Moving_data_DML
        |-- Schema_creation_DDL
        |-- Udiddit.pdf
 
-## 'Udiddit, A Social News Aggregator' schema design project from Udacity's SQL Nanodegree program
-
-The project is about investigating a poorly designed database for Udiddit, making corrections and amplifications where needed.
 
 ## Design Process
 * Creating database tables according to the project requirements
